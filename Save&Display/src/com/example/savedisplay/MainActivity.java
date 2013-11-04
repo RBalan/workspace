@@ -2,7 +2,6 @@ package com.example.savedisplay;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +11,9 @@ import java.util.ArrayList;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,15 +23,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ListView;
-import android.widget.Toast;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB) public class MainActivity extends Activity
 {
@@ -93,15 +89,15 @@ import android.widget.Toast;
 		{
 			case R.id.action_new:
 			{
-				Toast.makeText(this, "action_new selected", Toast.LENGTH_SHORT).show();
+				//Toast.makeText(this, "action_new selected", Toast.LENGTH_SHORT).show();
 				Intent intentToCreate = new Intent(this, EditActivity.class);
 				startActivity(intentToCreate);
 				break;
 			}
 			case R.id.action_edit:
 			{
-				Toast.makeText(this, "action_edit selected", Toast.LENGTH_SHORT).show();
-				Intent intentToEdit = new Intent(this, EditActivity.class);
+				//Toast.makeText(this, "action_edit selected", Toast.LENGTH_SHORT).show();
+//				Intent intentToEdit = new Intent(this, EditActivity.class);
 //				Bundle b = new Bundle();
 //				b.put
 //				startActivity(intentToEdit);
@@ -109,25 +105,53 @@ import android.widget.Toast;
 			}
 			case R.id.action_discard:
 			{
-				Toast.makeText(this, "action_discard selected", Toast.LENGTH_SHORT).show();
-				File fileToUpdate = new File(SAVED_FILE);
-				fileToUpdate.delete();
+				//Toast.makeText(this, "action_discard selected", Toast.LENGTH_SHORT).show();
 				
-				for(int i = 0; i < data.size(); i++)
+				DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener()
 				{
-					Data dataIterator = data.get(i);
-					if(dataIterator.isSelected())
-					{						
-						data.remove(i);
-					}
-					else
-					{
-						writeToFile(dataIterator.name + SEPARATOR, Context.MODE_APPEND);
-					}
-				}				
-				
-				dataAdapter.notifyDataSetInvalidated();
-				
+				    @Override
+				    public void onClick(DialogInterface dialog, int which) 
+				    {
+				        switch (which)
+				        {
+				        	case DialogInterface.BUTTON_POSITIVE:
+				        	{
+				        		File dir = getFilesDir();
+				        		File fileToUpdate = new File(dir, SAVED_FILE);
+				        		boolean isDeleted = fileToUpdate.delete();
+				        		Log.d("DELETE", " is " + isDeleted);
+				        		for(int i = 0; i < data.size(); i++)
+				        		{
+				        			Data dataIterator = data.get(i);
+				        			if(dataIterator.isSelected())
+				        			{						
+				        				data.remove(i);
+				        				--i;
+				        			}
+				        			else
+				        			{
+				        				writeToFile(dataIterator.name + SEPARATOR, Context.MODE_APPEND);
+				        			}
+				        		}				
+
+				        		ArrayList<Data> copyOfData = new ArrayList<Data>();
+				        		copyOfData.addAll(data);
+				        		dataAdapter.refreshAdapter(copyOfData);				        	
+
+				        		break;
+				        	}
+
+				        	case DialogInterface.BUTTON_NEGATIVE:
+				        		//No button clicked
+				        		break;
+				        }
+				    }
+				};
+
+				AlertDialog.Builder builder = new AlertDialog.Builder(this);
+				builder.setMessage("Are you sure you want to delete the selected items?").setPositiveButton("Yes", dialogClickListener)
+				    .setNegativeButton("No", dialogClickListener).show();
+								
 				break;
 			}
 			default:
@@ -159,66 +183,6 @@ import android.widget.Toast;
 		ListView listView = (ListView) findViewById(R.id.listView1);
 		// Assign adapter to ListView
 		listView.setAdapter(dataAdapter);
-	}
-
-	private class MyCustomAdapter extends ArrayAdapter<Data> 
-	{
-
-		private ArrayList<Data> dataArray;
-
-		public MyCustomAdapter(Context context, int textViewResourceId, ArrayList<Data> countryList) 
-		{
-			super(context, textViewResourceId, countryList);
-			this.dataArray = new ArrayList<Data>();
-			this.dataArray.addAll(countryList);
-		}
-
-		private class ViewHolder 
-		{			
-			CheckBox name;
-		}
-
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) 
-		{
-
-			ViewHolder holder = null;
-			Log.v("ConvertView", String.valueOf(position));
-
-			if (convertView == null) 
-			{
-				LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-				convertView = vi.inflate(R.layout.country_info, null);
-
-				holder = new ViewHolder();
-				holder.name = (CheckBox) convertView.findViewById(R.id.checkBox1);
-				convertView.setTag(holder);
-
-				holder.name.setOnClickListener(new View.OnClickListener() 
-				{  
-					public void onClick(View v) 
-					{  						
-						CheckBox cb = (CheckBox) v ;  
-						Data data = (Data) cb.getTag();  
-						Toast.makeText(getApplicationContext(), "Clicked on Checkbox: " + cb.getText() + " is " + cb.isChecked(), Toast.LENGTH_SHORT).show();
-						data.setSelected(cb.isChecked());
-						invalidateOptionsMenu();
-					}  
-				});  
-			} 
-			else 
-			{
-				holder = (ViewHolder) convertView.getTag();
-			}
-
-			Data data = dataArray.get(position);
-			holder.name.setText(data.getName());
-			holder.name.setChecked(data.isSelected());
-			holder.name.setTag(data);
-
-			return convertView;
-		}
-
 	}
 	
 	private String readFromFile() 
@@ -269,6 +233,75 @@ import android.widget.Toast;
 	    catch (IOException e) 
 	    {
 	        Log.e("Exception", "File write failed: " + e.toString());
-	    } 
+	    }
+	    
+	    Log.d("FILE_CHECK", "FILE CHECK " + readFromFile());
+	}
+	
+	//****************DEFINITION OF MyCustomAdapter private class*****************
+	private class MyCustomAdapter extends ArrayAdapter<Data> 
+	{
+
+		private ArrayList<Data> dataArray;
+
+		public MyCustomAdapter(Context context, int textViewResourceId, ArrayList<Data> countryList) 
+		{
+			super(context, textViewResourceId, countryList);
+			this.dataArray = new ArrayList<Data>();
+			this.dataArray.addAll(countryList);
+		}
+
+		private class ViewHolder 
+		{			
+			CheckBox name;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) 
+		{
+			ViewHolder holder = null;
+			Log.v("ConvertView", String.valueOf(position));
+
+			if (convertView == null) 
+			{
+				LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+				convertView = vi.inflate(R.layout.country_info, null);
+
+				holder = new ViewHolder();
+				holder.name = (CheckBox) convertView.findViewById(R.id.checkBox1);
+				convertView.setTag(holder);
+
+				holder.name.setOnClickListener(new View.OnClickListener() 
+				{  
+					public void onClick(View v) 
+					{  						
+						CheckBox cb = (CheckBox) v ;  
+						Data data = (Data) cb.getTag();  
+						//Toast.makeText(getApplicationContext(), "Clicked on Checkbox: " + cb.getText() + " is " + cb.isChecked(), Toast.LENGTH_SHORT).show();
+						data.setSelected(cb.isChecked());
+						invalidateOptionsMenu();
+					}  
+				});  
+			} 
+			else 
+			{
+				holder = (ViewHolder) convertView.getTag();
+			}
+
+			Data data = dataArray.get(position);
+			holder.name.setText(data.getName());
+			holder.name.setChecked(data.isSelected());
+			holder.name.setTag(data);
+
+			return convertView;
+		}
+
+		public synchronized void refreshAdapter(ArrayList<Data> items) 
+		{
+			dataArray.clear();
+			dataArray.addAll(items);
+			notifyDataSetChanged();
+		}
+
 	}
 }
