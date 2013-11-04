@@ -1,11 +1,13 @@
 package com.example.savedisplay;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
 import android.annotation.TargetApi;
@@ -32,9 +34,10 @@ import android.widget.Toast;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB) public class MainActivity extends Activity
 {
-	ArrayList<Country> countryList = null;
+	ArrayList<Data> data = null;
 	MyCustomAdapter dataAdapter = null;
 	final String SAVED_FILE = "savedData.txt";
+	final String SEPARATOR = "@";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
@@ -43,19 +46,25 @@ import android.widget.Toast;
 		setContentView(R.layout.activity_main);
 
 		//Generate list View from ArrayList
-		displayListView();
+		//displayListView();
 		Log.d("ATag", "On create");
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		displayListView();
 	}
 	
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
 		int noOfCellsChecked = 0;
-		ArrayList<Country> countryList = dataAdapter.countryList;
 		
-		for(int i = 0; i < countryList.size(); i++)
+		for(int i = 0; i < data.size(); i++)
 		{
-			Country iteratorCountry = countryList.get(i);
-			if(iteratorCountry.isSelected())
+			Data dataIterator = data.get(i);
+			if(dataIterator.isSelected())
 			{
 				++noOfCellsChecked;
 			}
@@ -92,11 +101,33 @@ import android.widget.Toast;
 			case R.id.action_edit:
 			{
 				Toast.makeText(this, "action_edit selected", Toast.LENGTH_SHORT).show();
+				Intent intentToEdit = new Intent(this, EditActivity.class);
+//				Bundle b = new Bundle();
+//				b.put
+//				startActivity(intentToEdit);
 				break;
 			}
 			case R.id.action_discard:
 			{
 				Toast.makeText(this, "action_discard selected", Toast.LENGTH_SHORT).show();
+				File fileToUpdate = new File(SAVED_FILE);
+				fileToUpdate.delete();
+				
+				for(int i = 0; i < data.size(); i++)
+				{
+					Data dataIterator = data.get(i);
+					if(dataIterator.isSelected())
+					{						
+						data.remove(i);
+					}
+					else
+					{
+						writeToFile(dataIterator.name + SEPARATOR, Context.MODE_APPEND);
+					}
+				}				
+				
+				dataAdapter.notifyDataSetInvalidated();
+				
 				break;
 			}
 			default:
@@ -109,58 +140,37 @@ import android.widget.Toast;
 	private void displayListView() 
 	{
 		//Array list of countries
-		countryList = new ArrayList<Country>();
-		Country country = new Country("Afghanistan", false);
-		countryList.add(country);
-		country = new Country("Albania", false);
-		countryList.add(country);
-		country = new Country("Algeria", false);
-		countryList.add(country);
-		country = new Country("American Samoa", false);
-		countryList.add(country);
-		country = new Country("Andorra", false);
-		countryList.add(country);
-		country = new Country("Angola", false);
-		countryList.add(country);
-		country = new Country("Anguilla", false);
-		countryList.add(country);
-		
+		data = new ArrayList<Data>();
+				
 		String stringFromFile = readFromFile();
 		Log.d("MainActivity", "FILE READ: " + stringFromFile);
-		country = new Country(stringFromFile, false);
-
+		
+		String[] entries = stringFromFile.split("@");
+		
+		for (int i = 0; i < entries.length; i++)
+		{
+			Data entry = new Data(entries[i], false);
+			data.add(entry);
+		}	
+		
 		//create an ArrayAdaptar from the String Array
 		dataAdapter = new MyCustomAdapter(this,
-				R.layout.country_info, countryList);
+				R.layout.country_info, data);
 		ListView listView = (ListView) findViewById(R.id.listView1);
 		// Assign adapter to ListView
 		listView.setAdapter(dataAdapter);
-
-
-//		listView.setOnItemClickListener(new OnItemClickListener() 
-//		{
-//			public void onItemClick(AdapterView<?> parent, View view, int position, long id) 
-//			{
-//				// When clicked, show a toast with the TextView text
-//				
-//				
-//				Country country = (Country) parent.getItemAtPosition(position);
-//				Toast.makeText(getApplicationContext(), "Clicked on Row: " + country.getName(), Toast.LENGTH_SHORT).show();
-//			}
-//		});
-
 	}
 
-	private class MyCustomAdapter extends ArrayAdapter<Country> 
+	private class MyCustomAdapter extends ArrayAdapter<Data> 
 	{
 
-		private ArrayList<Country> countryList;
+		private ArrayList<Data> dataArray;
 
-		public MyCustomAdapter(Context context, int textViewResourceId, ArrayList<Country> countryList) 
+		public MyCustomAdapter(Context context, int textViewResourceId, ArrayList<Data> countryList) 
 		{
 			super(context, textViewResourceId, countryList);
-			this.countryList = new ArrayList<Country>();
-			this.countryList.addAll(countryList);
+			this.dataArray = new ArrayList<Data>();
+			this.dataArray.addAll(countryList);
 		}
 
 		private class ViewHolder 
@@ -189,9 +199,9 @@ import android.widget.Toast;
 					public void onClick(View v) 
 					{  						
 						CheckBox cb = (CheckBox) v ;  
-						Country country = (Country) cb.getTag();  
+						Data data = (Data) cb.getTag();  
 						Toast.makeText(getApplicationContext(), "Clicked on Checkbox: " + cb.getText() + " is " + cb.isChecked(), Toast.LENGTH_SHORT).show();
-						country.setSelected(cb.isChecked());
+						data.setSelected(cb.isChecked());
 						invalidateOptionsMenu();
 					}  
 				});  
@@ -201,10 +211,10 @@ import android.widget.Toast;
 				holder = (ViewHolder) convertView.getTag();
 			}
 
-			Country country = countryList.get(position);
-			holder.name.setText(country.getName());
-			holder.name.setChecked(country.isSelected());
-			holder.name.setTag(country);
+			Data data = dataArray.get(position);
+			holder.name.setText(data.getName());
+			holder.name.setChecked(data.isSelected());
+			holder.name.setTag(data);
 
 			return convertView;
 		}
@@ -246,5 +256,19 @@ import android.widget.Toast;
 	    }
 
 	    return ret;
+	}
+	
+	private void writeToFile(String data, int mode) 
+	{
+	    try 
+	    {
+	        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput(SAVED_FILE, mode));
+	        outputStreamWriter.write(data);
+	        outputStreamWriter.close();
+	    }
+	    catch (IOException e) 
+	    {
+	        Log.e("Exception", "File write failed: " + e.toString());
+	    } 
 	}
 }

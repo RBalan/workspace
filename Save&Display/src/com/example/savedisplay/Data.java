@@ -1,11 +1,11 @@
 package com.example.savedisplay;
 
-public class Country {
+public class Data {
 	  
 	 String name = null;
 	 boolean selected = false;
 	  
-	 public Country(String name, boolean selected) {
+	 public Data(String name, boolean selected) {
 	  super();
 	  this.name = name;
 	  this.selected = selected;

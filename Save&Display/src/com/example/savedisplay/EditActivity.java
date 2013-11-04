@@ -21,6 +21,7 @@ import android.widget.EditText;
 public class EditActivity extends Activity 
 {
 	final String SAVED_FILE = "savedData.txt";
+	final String SEPARATOR = "@";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) 
@@ -40,18 +41,18 @@ public class EditActivity extends Activity
 	public void saveEntry(View v)
 	{
 		EditText editedText = (EditText)findViewById(R.id.editInfo);
-		writeToFile(editedText.getText().toString());
+		writeToFile(editedText.getText().toString() + SEPARATOR, Context.MODE_APPEND);
 		
 		Log.d("EditActivity", "Saved entry " + editedText.getText());
 		finish();
 		
 	}
 	
-	private void writeToFile(String data) 
+	private void writeToFile(String data, int mode) 
 	{
 	    try 
 	    {
-	        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput(SAVED_FILE, Context.MODE_PRIVATE));
+	        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput(SAVED_FILE, mode));
 	        outputStreamWriter.write(data);
 	        outputStreamWriter.close();
 	    }
