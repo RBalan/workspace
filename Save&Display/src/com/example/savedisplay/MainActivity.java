@@ -1,5 +1,11 @@
 package com.example.savedisplay;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import android.annotation.TargetApi;
@@ -28,6 +34,7 @@ import android.widget.Toast;
 {
 	ArrayList<Country> countryList = null;
 	MyCustomAdapter dataAdapter = null;
+	final String SAVED_FILE = "savedData.txt";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
@@ -117,6 +124,10 @@ import android.widget.Toast;
 		countryList.add(country);
 		country = new Country("Anguilla", false);
 		countryList.add(country);
+		
+		String stringFromFile = readFromFile();
+		Log.d("MainActivity", "FILE READ: " + stringFromFile);
+		country = new Country(stringFromFile, false);
 
 		//create an ArrayAdaptar from the String Array
 		dataAdapter = new MyCustomAdapter(this,
@@ -198,5 +209,42 @@ import android.widget.Toast;
 			return convertView;
 		}
 
+	}
+	
+	private String readFromFile() 
+	{
+
+	    String ret = "";
+
+	    try 
+	    {
+	        InputStream inputStream = openFileInput(SAVED_FILE);
+
+	        if ( inputStream != null ) 
+	        {
+	        	InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+	            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+	            String receiveString = "";
+	            StringBuilder stringBuilder = new StringBuilder();
+
+	            while ( (receiveString = bufferedReader.readLine()) != null ) 
+	            {
+	                stringBuilder.append(receiveString);
+	            }
+
+	            inputStream.close();
+	            ret = stringBuilder.toString();
+	        }
+	    }
+	    catch (FileNotFoundException e) 
+	    {
+	        Log.e("login activity", "File not found: " + e.toString());
+	    } 
+	    catch (IOException e) 
+	    {
+	        Log.e("login activity", "Can not read file: " + e.toString());
+	    }
+
+	    return ret;
 	}
 }
