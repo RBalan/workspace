@@ -5,6 +5,7 @@ import java.io.OutputStreamWriter;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -14,13 +15,37 @@ import android.widget.EditText;
 public class EditActivity extends Activity 
 {
 	final String SAVED_FILE = "savedData.txt";
-	final String SEPARATOR = "@";
+	final String SEPARATOR = "~";
+	final String KEY_IDENTIFIER = "editedData";
+	final String RESULT = "result";
+	String[] receivedData = null;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_edit);
+		
+		if (savedInstanceState == null)
+		{
+			Bundle extras = getIntent().getExtras();
+			if (extras == null)
+			{
+				receivedData = null;
+			}
+			else
+			{
+				receivedData = extras.getStringArray(KEY_IDENTIFIER);
+				EditText editedText = (EditText)findViewById(R.id.editInfo);
+				editedText.setText(receivedData[0]);
+			}
+		}
+		else
+		{
+			receivedData = (String[]) savedInstanceState.getSerializable(KEY_IDENTIFIER);
+			EditText editedText = (EditText)findViewById(R.id.editInfo);
+			editedText.setText(receivedData[0]);
+		}
 	}
 
 	@Override
@@ -33,12 +58,32 @@ public class EditActivity extends Activity
 	
 	public void saveEntry(View v)
 	{
+		if (receivedData == null)
+		{
+			receivedData = new String[2];
+		}
 		EditText editedText = (EditText)findViewById(R.id.editInfo);
-		writeToFile(editedText.getText().toString() + SEPARATOR, Context.MODE_APPEND);
+		receivedData[0] = editedText.getText().toString();
 		
-		Log.d("EditActivity", "Saved entry " + editedText.getText());
-		finish();
-		
+		if (receivedData[1] != null)
+		{
+			Log.d("SAVE ENTRY", v.toString());
+			
+//			writeToFile(receivedData[0] + SEPARATOR, Context.MODE_APPEND);
+
+			Log.d("EditActivity", "Edited entry " + editedText.getText());
+
+			Intent returnIntent = new Intent();
+			returnIntent.putExtra(RESULT,receivedData);
+			setResult(RESULT_OK,returnIntent);     
+			finish();
+		}
+		else
+		{
+			Log.d("EditActivity", "Saved entry " + receivedData[0]);
+			writeToFile(receivedData[0] + SEPARATOR, Context.MODE_APPEND);
+			finish();
+		}
 	}
 	
 	private void writeToFile(String data, int mode) 

@@ -27,13 +27,17 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.ListView;
+import android.widget.Toast;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB) public class MainActivity extends Activity
 {
 	ArrayList<Data> data = null;
 	MyCustomAdapter dataAdapter = null;
 	final String SAVED_FILE = "savedData.txt";
-	final String SEPARATOR = "@";
+	final String SEPARATOR = "~";
+	final int REQ_CODE_EDIT = 1;
+	final String KEY_IDENTIFIER = "editedData";
+	final String RESULT = "result";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
@@ -97,10 +101,31 @@ import android.widget.ListView;
 			case R.id.action_edit:
 			{
 				//Toast.makeText(this, "action_edit selected", Toast.LENGTH_SHORT).show();
-//				Intent intentToEdit = new Intent(this, EditActivity.class);
-//				Bundle b = new Bundle();
-//				b.put
-//				startActivity(intentToEdit);
+				String dataToEdit = null;
+				int indexOfEdited = -1;
+				for(int i = 0; i < data.size(); i++)
+				{
+					Data dataIterator = data.get(i);
+					if(dataIterator.isSelected())
+					{
+						indexOfEdited = i;
+						dataToEdit = dataIterator.getName();
+					}
+				}
+				
+				String[] dataAndIndex = {dataToEdit, String.valueOf(indexOfEdited)};
+				
+				if (dataToEdit != null)
+				{
+					Intent intentToEdit = new Intent(this, EditActivity.class);
+					intentToEdit.putExtra(KEY_IDENTIFIER, dataAndIndex);
+					startActivityForResult(intentToEdit, REQ_CODE_EDIT);
+				}
+				else
+				{
+					Toast.makeText(this, "Data could not be edited.", Toast.LENGTH_SHORT);
+				}
+				
 				break;
 			}
 			case R.id.action_discard:
@@ -116,10 +141,7 @@ import android.widget.ListView;
 				        {
 				        	case DialogInterface.BUTTON_POSITIVE:
 				        	{
-				        		File dir = getFilesDir();
-				        		File fileToUpdate = new File(dir, SAVED_FILE);
-				        		boolean isDeleted = fileToUpdate.delete();
-				        		Log.d("DELETE", " is " + isDeleted);
+				        		deleteFile();
 				        		for(int i = 0; i < data.size(); i++)
 				        		{
 				        			Data dataIterator = data.get(i);
@@ -132,11 +154,9 @@ import android.widget.ListView;
 				        			{
 				        				writeToFile(dataIterator.name + SEPARATOR, Context.MODE_APPEND);
 				        			}
-				        		}				
-
-				        		ArrayList<Data> copyOfData = new ArrayList<Data>();
-				        		copyOfData.addAll(data);
-				        		dataAdapter.refreshAdapter(copyOfData);				        	
+				        		}			
+				        		dataAdapter.dataArray = ((ArrayList<Data>)data.clone());
+				        		dataAdapter.refreshAdapter();				        	
 
 				        		break;
 				        	}
@@ -160,6 +180,35 @@ import android.widget.ListView;
 		
 		return true;
 	}
+	
+	private void deleteFile()
+	{
+		File dir = getFilesDir();
+		File fileToUpdate = new File(dir, SAVED_FILE);
+		boolean isDeleted = fileToUpdate.delete();
+		Log.d("DELETE", " is " + isDeleted);
+	}
+	
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+		
+		if (requestCode == REQ_CODE_EDIT)
+		{
+			String[] result = data.getStringArrayExtra(RESULT);
+			Log.d("ON_ACTIVITY_RESULT", "The edited text is: " + result[0] + " and the index is: " + result[1]);
+			Data editedData = new Data(result[0], false);
+			this.data.set(Integer.parseInt(result[1]), editedData);
+			
+			deleteFile();
+			for(int i = 0; i < this.data.size(); i++)
+    		{
+    			Data dataIterator = this.data.get(i);
+    			writeToFile(dataIterator.name + SEPARATOR, Context.MODE_APPEND);
+    		}	
+			dataAdapter.refreshAdapter();
+		}
+	}
 
 	private void displayListView() 
 	{
@@ -169,14 +218,16 @@ import android.widget.ListView;
 		String stringFromFile = readFromFile();
 		Log.d("MainActivity", "FILE READ: " + stringFromFile);
 		
-		String[] entries = stringFromFile.split("@");
+		String[] entries = stringFromFile.split(SEPARATOR);
 		
-		for (int i = 0; i < entries.length; i++)
+		if (entries != null)
 		{
-			Data entry = new Data(entries[i], false);
-			data.add(entry);
-		}	
-		
+			for (int i = 0; i < entries.length; i++)
+			{
+				Data entry = new Data(entries[i], false);
+				data.add(entry);
+			}	
+		}
 		//create an ArrayAdaptar from the String Array
 		dataAdapter = new MyCustomAdapter(this,
 				R.layout.country_info, data);
@@ -185,9 +236,9 @@ import android.widget.ListView;
 		listView.setAdapter(dataAdapter);
 	}
 	
+	//***************READ & WRITE FROM/TO FILE******************
 	private String readFromFile() 
 	{
-
 	    String ret = "";
 
 	    try 
@@ -244,11 +295,14 @@ import android.widget.ListView;
 
 		private ArrayList<Data> dataArray;
 
-		public MyCustomAdapter(Context context, int textViewResourceId, ArrayList<Data> countryList) 
+		public MyCustomAdapter(Context context, int textViewResourceId, ArrayList<Data> dataArray) 
 		{
-			super(context, textViewResourceId, countryList);
+			super(context, textViewResourceId, dataArray);
 			this.dataArray = new ArrayList<Data>();
-			this.dataArray.addAll(countryList);
+			if (dataArray != null)
+			{
+				this.dataArray.addAll(dataArray);
+			}
 		}
 
 		private class ViewHolder 
@@ -296,10 +350,12 @@ import android.widget.ListView;
 			return convertView;
 		}
 
-		public synchronized void refreshAdapter(ArrayList<Data> items) 
+		public synchronized void refreshAdapter() 
 		{
+			ArrayList<Data> copyOfData = new ArrayList<Data>();
+    		copyOfData.addAll(dataArray);
 			dataArray.clear();
-			dataArray.addAll(items);
+			dataArray.addAll(copyOfData);
 			notifyDataSetChanged();
 		}
 
