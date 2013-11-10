@@ -56,6 +56,15 @@ public class EditActivity extends Activity
 		return true;
 	}
 	
+	
+	//********************BUTTON ACTIONS*************************
+	
+	public void cancel(View v)
+	{
+		setResult(RESULT_OK, null); 
+		finish();
+	}
+	
 	public void saveEntry(View v)
 	{
 		Utils.activityContext = EditActivity.this;

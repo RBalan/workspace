@@ -212,30 +212,33 @@ import android.widget.Toast;
 	{
 		super.onActivityResult(requestCode, resultCode, data);
 		
-		if (requestCode == REQ_CODE_EDIT)
+		if (data != null)
 		{
-			String[] result = data.getStringArrayExtra(RESULT);
-			Log.d("ON_ACTIVITY_RESULT", "The edited text is: " + result[0] + " and the index is: " + result[1]);
-			Data editedData = new Data(result[0], false);
-			this.data.set(Integer.parseInt(result[1]), editedData);
-			
-			deleteFile();
-			for(int i = 0; i < this.data.size(); i++)
-    		{
-    			Data dataIterator = this.data.get(i);
-    			String encrypted = "";
-				try 
+			if (requestCode == REQ_CODE_EDIT)
+			{
+				String[] result = data.getStringArrayExtra(RESULT);
+				Log.d("ON_ACTIVITY_RESULT", "The edited text is: " + result[0] + " and the index is: " + result[1]);
+				Data editedData = new Data(result[0], false);
+				this.data.set(Integer.parseInt(result[1]), editedData);
+
+				deleteFile();
+				for(int i = 0; i < this.data.size(); i++)
 				{
-					encrypted = Utils.encrypt(Utils.SEED, dataIterator.getName());
-					Utils.writeToFile(encrypted + SEPARATOR, Context.MODE_APPEND);
-				} 
-				catch (Exception e) 
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-    		}	
-			dataAdapter.refreshAdapter();
+					Data dataIterator = this.data.get(i);
+					String encrypted = "";
+					try 
+					{
+						encrypted = Utils.encrypt(Utils.SEED, dataIterator.getName());
+						Utils.writeToFile(encrypted + SEPARATOR, Context.MODE_APPEND);
+					} 
+					catch (Exception e) 
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}	
+				dataAdapter.refreshAdapter();
+			}
 		}
 	}
 
