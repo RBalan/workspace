@@ -1,12 +1,6 @@
 package com.example.savedisplay;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
 import android.annotation.TargetApi;
@@ -33,7 +27,6 @@ import android.widget.Toast;
 {
 	ArrayList<Data> data = null;
 	MyCustomAdapter dataAdapter = null;
-	final String SAVED_FILE = "savedData.txt";
 	final String SEPARATOR = "~";
 	final int REQ_CODE_EDIT = 1;
 	final String KEY_IDENTIFIER = "editedData";
@@ -54,11 +47,16 @@ import android.widget.Toast;
 	public void onResume()
 	{
 		super.onResume();
+		Utils.activityContext = MainActivity.this;
 		displayListView();
+		invalidateOptionsMenu();
 	}
 	
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
+		MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.main, menu);
+	    
 		int noOfCellsChecked = 0;
 		
 		for(int i = 0; i < data.size(); i++)
@@ -70,9 +68,8 @@ import android.widget.Toast;
 			}
 		}
 		
-		MenuInflater inflater = getMenuInflater();
-	    inflater.inflate(R.menu.main, menu);
-	    Log.d("SomeTag", "Recreating the action bar||" + String.valueOf(noOfCellsChecked));
+		Log.d("SomeTag", "Recreating the action bar||" + String.valueOf(noOfCellsChecked));
+		
 	    if (noOfCellsChecked == 0)
 		{
 	    	menu.getItem(1).setEnabled(false);
@@ -89,13 +86,25 @@ import android.widget.Toast;
 	
 	public boolean onOptionsItemSelected(MenuItem item)
 	{
+		
 		switch(item.getItemId())
 		{
 			case R.id.action_new:
 			{
-				//Toast.makeText(this, "action_new selected", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "action_new selected", Toast.LENGTH_SHORT).show();
 				Intent intentToCreate = new Intent(this, EditActivity.class);
 				startActivity(intentToCreate);
+				
+//				Provider[] setOfServices = Security.getProviders();
+//				for (int i = 0; i < setOfServices.length; ++i)
+//				{
+//					System.out.println("Provider: " + setOfServices[i].toString());
+//					
+//				}
+//				Provider p = (Provider)setOfServices[3];
+//				p.getName();
+//				
+//				Cipher c = Cipher.getInstance(transformation, p);
 				break;
 			}
 			case R.id.action_edit:
@@ -152,7 +161,17 @@ import android.widget.Toast;
 				        			}
 				        			else
 				        			{
-				        				writeToFile(dataIterator.name + SEPARATOR, Context.MODE_APPEND);
+				        				String encrypted = "";
+				        				try 
+				        				{
+				        					encrypted = Utils.encrypt(Utils.SEED, dataIterator.getName());
+				        				} 
+				        				catch (Exception e) 
+				        				{
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										}
+				        				Utils.writeToFile(encrypted + SEPARATOR, Context.MODE_APPEND);
 				        			}
 				        		}			
 				        		dataAdapter.dataArray = ((ArrayList<Data>)data.clone());
@@ -184,7 +203,7 @@ import android.widget.Toast;
 	private void deleteFile()
 	{
 		File dir = getFilesDir();
-		File fileToUpdate = new File(dir, SAVED_FILE);
+		File fileToUpdate = new File(dir, Utils.SAVED_FILE);
 		boolean isDeleted = fileToUpdate.delete();
 		Log.d("DELETE", " is " + isDeleted);
 	}
@@ -204,7 +223,17 @@ import android.widget.Toast;
 			for(int i = 0; i < this.data.size(); i++)
     		{
     			Data dataIterator = this.data.get(i);
-    			writeToFile(dataIterator.name + SEPARATOR, Context.MODE_APPEND);
+    			String encrypted = "";
+				try 
+				{
+					encrypted = Utils.encrypt(Utils.SEED, dataIterator.getName());
+					Utils.writeToFile(encrypted + SEPARATOR, Context.MODE_APPEND);
+				} 
+				catch (Exception e) 
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
     		}	
 			dataAdapter.refreshAdapter();
 		}
@@ -215,7 +244,7 @@ import android.widget.Toast;
 		//Array list of countries
 		data = new ArrayList<Data>();
 				
-		String stringFromFile = readFromFile();
+		String stringFromFile = Utils.readFromFile();
 		Log.d("MainActivity", "FILE READ: " + stringFromFile);
 		
 		String[] entries = stringFromFile.split(SEPARATOR);
@@ -224,7 +253,17 @@ import android.widget.Toast;
 		{
 			for (int i = 0; i < entries.length; i++)
 			{
-				Data entry = new Data(entries[i], false);
+				String decryptedStringFromFile = "";
+				try 
+				{
+					decryptedStringFromFile = Utils.decrypt(Utils.SEED, entries[i]);
+				} 
+				catch (Exception e) 
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				Data entry = new Data(decryptedStringFromFile, false);
 				data.add(entry);
 			}	
 		}
@@ -234,59 +273,6 @@ import android.widget.Toast;
 		ListView listView = (ListView) findViewById(R.id.listView1);
 		// Assign adapter to ListView
 		listView.setAdapter(dataAdapter);
-	}
-	
-	//***************READ & WRITE FROM/TO FILE******************
-	private String readFromFile() 
-	{
-	    String ret = "";
-
-	    try 
-	    {
-	        InputStream inputStream = openFileInput(SAVED_FILE);
-
-	        if ( inputStream != null ) 
-	        {
-	        	InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-	            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-	            String receiveString = "";
-	            StringBuilder stringBuilder = new StringBuilder();
-
-	            while ( (receiveString = bufferedReader.readLine()) != null ) 
-	            {
-	                stringBuilder.append(receiveString);
-	            }
-
-	            inputStream.close();
-	            ret = stringBuilder.toString();
-	        }
-	    }
-	    catch (FileNotFoundException e) 
-	    {
-	        Log.e("login activity", "File not found: " + e.toString());
-	    } 
-	    catch (IOException e) 
-	    {
-	        Log.e("login activity", "Can not read file: " + e.toString());
-	    }
-
-	    return ret;
-	}
-	
-	private void writeToFile(String data, int mode) 
-	{
-	    try 
-	    {
-	        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput(SAVED_FILE, mode));
-	        outputStreamWriter.write(data);
-	        outputStreamWriter.close();
-	    }
-	    catch (IOException e) 
-	    {
-	        Log.e("Exception", "File write failed: " + e.toString());
-	    }
-	    
-	    Log.d("FILE_CHECK", "FILE CHECK " + readFromFile());
 	}
 	
 	//****************DEFINITION OF MyCustomAdapter private class*****************

@@ -58,6 +58,7 @@ public class EditActivity extends Activity
 	
 	public void saveEntry(View v)
 	{
+		Utils.activityContext = EditActivity.this;
 		if (receivedData == null)
 		{
 			receivedData = new String[2];
@@ -80,27 +81,20 @@ public class EditActivity extends Activity
 		}
 		else
 		{
+			String encrypted = "";
+			try 
+			{
+				encrypted = Utils.encrypt(Utils.SEED, receivedData[0]);
+			} 
+			catch (Exception e) 
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			Log.d("EditActivity", "Saved entry " + receivedData[0]);
-			writeToFile(receivedData[0] + SEPARATOR, Context.MODE_APPEND);
+			Log.d("EditActivity", "Saved entry " + encrypted);
+			Utils.writeToFile(encrypted + SEPARATOR, Context.MODE_APPEND);
 			finish();
 		}
 	}
-	
-	private void writeToFile(String data, int mode) 
-	{
-	    try 
-	    {
-	        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput(SAVED_FILE, mode));
-	        outputStreamWriter.write(data);
-	        outputStreamWriter.close();
-	    }
-	    catch (IOException e) 
-	    {
-	        Log.e("Exception", "File write failed: " + e.toString());
-	    } 
-	}
-
-
-	
-
 }
