@@ -1,6 +1,7 @@
 package com.example.savedisplay;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,39 +19,47 @@ import android.util.Log;
 
 public class Utils 
 {
-	static final String SAVED_FILE = "savedData.txt";
-	public static Context activityContext;
-	static final String SEED = "Master-Password";
+	static final String SAVED_FILE = "savedData.txt"; //The file in which we save data
+	public static Context activityContext; //A reference to the context from which we want to write/read to/from the file;
+										   //The methods openFileInput() and openFileOutput() belong to an activity context
+	static final String SEED = "Master-Password"; //Seed used for randomization
 	
-	//***************READ & WRITE FROM/TO FILE******************
+	//***************READ, WRITE, DELETE FILE******************
 	public static String readFromFile() 
 	{
 		String ret = "";
 
 		try 
 		{
-		
-			InputStream inputStream = activityContext.openFileInput(SAVED_FILE);
-
-			if ( inputStream != null ) 
+			if (activityContext != null)
 			{
-				InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-				BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-				String receiveString = "";
-				StringBuilder stringBuilder = new StringBuilder();
+				InputStream inputStream = activityContext.openFileInput(SAVED_FILE);
 
-				while ( (receiveString = bufferedReader.readLine()) != null ) 
+				if ( inputStream != null ) 
 				{
-					stringBuilder.append(receiveString);
-				}
+					InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+					BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+					String receiveString = "";
+					StringBuilder stringBuilder = new StringBuilder();
 
-				inputStream.close();
-				ret = stringBuilder.toString();
+					while ( (receiveString = bufferedReader.readLine()) != null ) 
+					{
+						stringBuilder.append(receiveString);
+					}
+
+					inputStream.close();
+					ret = stringBuilder.toString();
+				}
+			}
+			else
+			{
+				Log.d("CONTEXT", "Activity context is null");
 			}
 		}
 		catch (FileNotFoundException e) 
 		{
 			Log.e("login activity", "File not found: " + e.toString());
+			return "";
 		} 
 		catch (IOException e) 
 		{
@@ -64,9 +73,12 @@ public class Utils
 	{
 		try 
 		{
-			OutputStreamWriter outputStreamWriter = new OutputStreamWriter(activityContext.openFileOutput(SAVED_FILE, mode));
-			outputStreamWriter.write(data);
-			outputStreamWriter.close();
+			if (activityContext != null)
+			{
+				OutputStreamWriter outputStreamWriter = new OutputStreamWriter(activityContext.openFileOutput(SAVED_FILE, mode));
+				outputStreamWriter.write(data);
+				outputStreamWriter.close();
+			}
 		}
 		catch (IOException e) 
 		{
@@ -76,6 +88,16 @@ public class Utils
 		Log.d("FILE_CHECK", "FILE CHECK " + readFromFile());
 	}
 	
+	public static void deleteFile()
+	{
+		if (activityContext != null)
+		{
+			File dir = activityContext.getFilesDir();
+			File fileToUpdate = new File(dir, Utils.SAVED_FILE);
+			boolean isDeleted = fileToUpdate.delete();
+			Log.d("DELETE", " is " + isDeleted);
+		}
+	}
 	//***************ENCRYPT & DECRYPT******************
 	public static String encrypt(String seed, String cleartext) throws Exception {
 		byte[] rawKey = getRawKey(seed.getBytes());

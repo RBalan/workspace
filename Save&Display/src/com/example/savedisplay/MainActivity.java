@@ -1,6 +1,5 @@
 package com.example.savedisplay;
 
-import java.io.File;
 import java.util.ArrayList;
 
 import android.annotation.TargetApi;
@@ -25,9 +24,9 @@ import android.widget.Toast;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB) public class MainActivity extends Activity
 {
-	ArrayList<Data> data = null;
+	ArrayList<Data> data = null; //Data displayed on the ListView
 	MyCustomAdapter dataAdapter = null;
-	final String SEPARATOR = "~";
+	final String SEPARATOR = "~"; //The line separator used when writing in a file
 	final int REQ_CODE_EDIT = 1;
 	final String KEY_IDENTIFIER = "editedData";
 	final String RESULT = "result";
@@ -38,8 +37,6 @@ import android.widget.Toast;
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		//Generate list View from ArrayList
-		//displayListView();
 		Log.d("ATag", "On create");
 	}
 	
@@ -86,30 +83,17 @@ import android.widget.Toast;
 	
 	public boolean onOptionsItemSelected(MenuItem item)
 	{
-		
 		switch(item.getItemId())
 		{
 			case R.id.action_new:
 			{
-				Toast.makeText(this, "action_new selected", Toast.LENGTH_SHORT).show();
 				Intent intentToCreate = new Intent(this, EditActivity.class);
 				startActivity(intentToCreate);
 				
-//				Provider[] setOfServices = Security.getProviders();
-//				for (int i = 0; i < setOfServices.length; ++i)
-//				{
-//					System.out.println("Provider: " + setOfServices[i].toString());
-//					
-//				}
-//				Provider p = (Provider)setOfServices[3];
-//				p.getName();
-//				
-//				Cipher c = Cipher.getInstance(transformation, p);
 				break;
 			}
 			case R.id.action_edit:
 			{
-				//Toast.makeText(this, "action_edit selected", Toast.LENGTH_SHORT).show();
 				String dataToEdit = null;
 				int indexOfEdited = -1;
 				for(int i = 0; i < data.size(); i++)
@@ -139,18 +123,17 @@ import android.widget.Toast;
 			}
 			case R.id.action_discard:
 			{
-				//Toast.makeText(this, "action_discard selected", Toast.LENGTH_SHORT).show();
-				
 				DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener()
 				{
-				    @Override
+				    @SuppressWarnings("unchecked")
+					@Override
 				    public void onClick(DialogInterface dialog, int which) 
 				    {
 				        switch (which)
 				        {
 				        	case DialogInterface.BUTTON_POSITIVE:
 				        	{
-				        		deleteFile();
+				        		Utils.deleteFile();
 				        		for(int i = 0; i < data.size(); i++)
 				        		{
 				        			Data dataIterator = data.get(i);
@@ -200,14 +183,6 @@ import android.widget.Toast;
 		return true;
 	}
 	
-	private void deleteFile()
-	{
-		File dir = getFilesDir();
-		File fileToUpdate = new File(dir, Utils.SAVED_FILE);
-		boolean isDeleted = fileToUpdate.delete();
-		Log.d("DELETE", " is " + isDeleted);
-	}
-	
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
 		super.onActivityResult(requestCode, resultCode, data);
@@ -221,7 +196,7 @@ import android.widget.Toast;
 				Data editedData = new Data(result[0], false);
 				this.data.set(Integer.parseInt(result[1]), editedData);
 
-				deleteFile();
+				Utils.deleteFile();
 				for(int i = 0; i < this.data.size(); i++)
 				{
 					Data dataIterator = this.data.get(i);
@@ -250,10 +225,10 @@ import android.widget.Toast;
 		String stringFromFile = Utils.readFromFile();
 		Log.d("MainActivity", "FILE READ: " + stringFromFile);
 		
-		String[] entries = stringFromFile.split(SEPARATOR);
-		
-		if (entries != null)
+		if (stringFromFile != "")
 		{
+			String[] entries = stringFromFile.split(SEPARATOR);
+				
 			for (int i = 0; i < entries.length; i++)
 			{
 				String decryptedStringFromFile = "";
@@ -268,14 +243,15 @@ import android.widget.Toast;
 				}
 				Data entry = new Data(decryptedStringFromFile, false);
 				data.add(entry);
-			}	
+			}
+			//create an ArrayAdaptar from the String Array
+			dataAdapter = new MyCustomAdapter(this,
+					R.layout.country_info, data);
+			ListView listView = (ListView) findViewById(R.id.listView1);
+			// Assign adapter to ListView
+			listView.setAdapter(dataAdapter);
 		}
-		//create an ArrayAdaptar from the String Array
-		dataAdapter = new MyCustomAdapter(this,
-				R.layout.country_info, data);
-		ListView listView = (ListView) findViewById(R.id.listView1);
-		// Assign adapter to ListView
-		listView.setAdapter(dataAdapter);
+		
 	}
 	
 	//****************DEFINITION OF MyCustomAdapter private class*****************
@@ -320,7 +296,6 @@ import android.widget.Toast;
 					{  						
 						CheckBox cb = (CheckBox) v ;  
 						Data data = (Data) cb.getTag();  
-						//Toast.makeText(getApplicationContext(), "Clicked on Checkbox: " + cb.getText() + " is " + cb.isChecked(), Toast.LENGTH_SHORT).show();
 						data.setSelected(cb.isChecked());
 						invalidateOptionsMenu();
 					}  

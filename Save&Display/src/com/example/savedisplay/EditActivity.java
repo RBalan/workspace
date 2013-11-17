@@ -1,8 +1,5 @@
 package com.example.savedisplay;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +11,6 @@ import android.widget.EditText;
 
 public class EditActivity extends Activity 
 {
-	final String SAVED_FILE = "savedData.txt";
 	final String SEPARATOR = "~";
 	final String KEY_IDENTIFIER = "editedData";
 	final String RESULT = "result";
@@ -78,9 +74,6 @@ public class EditActivity extends Activity
 		if (receivedData[1] != null)
 		{
 			Log.d("SAVE ENTRY", v.toString());
-			
-//			writeToFile(receivedData[0] + SEPARATOR, Context.MODE_APPEND);
-
 			Log.d("EditActivity", "Edited entry " + editedText.getText());
 
 			Intent returnIntent = new Intent();
